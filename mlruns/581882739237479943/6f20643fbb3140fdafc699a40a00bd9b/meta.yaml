@@ -1,0 +1,14 @@
+artifact_uri: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/6f20643fbb3140fdafc699a40a00bd9b/artifacts
+end_time: 1761842647550
+entry_point_name: ''
+experiment_id: '581882739237479943'
+lifecycle_stage: active
+run_id: 6f20643fbb3140fdafc699a40a00bd9b
+run_name: 'RandomForest_{''n_estimators'': 100, ''max_depth'': 3}'
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1761842644288
+status: 3
+tags: []
+user_id: adarsh_panigrahi333

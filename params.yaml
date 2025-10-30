@@ -1,0 +1,15 @@
+data_load:
+  data_path: /home/adarsh_panigrahi333/iris_pipeline/data/iris.csv
+
+split:
+  test_size: 0.4
+  random_state: 42
+
+train:
+  max_depth: 3
+  random_state: 1
+  model_output_path: /home/adarsh_panigrahi333/iris_pipeline/artifacts/model_1.joblib
+  model_name: IrisBestModel
+  experiment_name: Iris_MultiModel_Training
+  tracking_uri: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns
+  storage_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-0db4b224b6044f2291676813b744743c/artifacts

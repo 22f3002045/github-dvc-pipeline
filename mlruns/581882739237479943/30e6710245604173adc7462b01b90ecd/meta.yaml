@@ -1,0 +1,14 @@
+artifact_uri: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/30e6710245604173adc7462b01b90ecd/artifacts
+end_time: 1761847220295
+entry_point_name: ''
+experiment_id: '581882739237479943'
+lifecycle_stage: active
+run_id: 30e6710245604173adc7462b01b90ecd
+run_name: 'LogisticRegression_{''C'': 1.0, ''max_iter'': 200}'
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1761847216786
+status: 3
+tags: []
+user_id: adarsh_panigrahi333
