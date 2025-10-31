@@ -1,8 +1,4 @@
-Here’s a clean, professional **README.md** file you can use for your DVC-based Iris pipeline project 👇
 
----
-
-```markdown
 # 🌸 Iris ML Pipeline with DVC & MLflow
 
 This project demonstrates a complete end-to-end Machine Learning workflow for the **Iris dataset**, integrated with **DVC (Data Version Control)** and **MLflow** for experiment tracking and reproducibility.
