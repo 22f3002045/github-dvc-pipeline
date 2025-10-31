@@ -110,10 +110,10 @@ joblib
 
 ## 🏗️ Future Enhancements
 
-* Add model comparison across multiple classifiers
-* Integrate automated data versioning for new dataset versions
+
 * Containerize with Docker for deployment
-* Include CI/CD pipeline for automated runs
+* Add to Kubernetes Engine in GCP
+
 
 ---
 
