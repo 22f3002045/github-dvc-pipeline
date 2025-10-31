@@ -44,7 +44,7 @@ iris_pipeline/
 * **Outputs:** `logs/sanity_check.log`
 
 ---
-
+```
 ## 🚀 Running the Pipeline
 
 ### Step 1: Initialize DVC and Git
@@ -52,8 +52,8 @@ iris_pipeline/
 ```bash
 git init
 dvc init
-```
 
+```
 ### Step 2: Reproduce the pipeline
 
 ```bash
