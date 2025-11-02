@@ -1,6 +1,0 @@
-artifact_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943
-creation_time: 1761842573293
-experiment_id: '581882739237479943'
-last_update_time: 1761842573293
-lifecycle_stage: active
-name: Iris_MultiModel_Training
