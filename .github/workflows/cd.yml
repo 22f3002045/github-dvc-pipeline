@@ -22,12 +22,6 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Download dataset
-        run: |
-          mkdir -p data
-          wget https://raw.githubusercontent.com/IITMBSMLOps/ga_resources/main/week_1/data/raw/iris.csv -O data/iris.csv
-
-
       # 📦 Install dependencies for training
       - name: Install dependencies for training
         run: |
@@ -39,7 +33,10 @@ jobs:
       - name: Pull DVC data (if configured)
         run: |
           if [ -f ".dvc/config" ]; then
-            dvc pull || echo "No DVC remote configured"
+            echo "Pulling dataset using DVC..."
+            dvc pull || echo "No DVC remote configured or dataset already present"
+          else
+            echo "DVC not configured, using dataset from repo."
           fi
 
       # 🧠 Run model training
@@ -51,7 +48,7 @@ jobs:
         run: |
           if [ ! -f "artifacts/model.joblib" ]; then
             echo "❌ Model artifact missing!"
-            ls -la
+            ls -la artifacts
             exit 1
           fi
           echo "✅ Model artifact found."
