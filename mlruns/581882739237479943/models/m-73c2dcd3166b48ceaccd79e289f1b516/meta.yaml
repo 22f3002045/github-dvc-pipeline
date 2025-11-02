@@ -1,0 +1,10 @@
+artifact_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-73c2dcd3166b48ceaccd79e289f1b516/artifacts
+creation_timestamp: 1761847216860
+experiment_id: '581882739237479943'
+last_updated_timestamp: 1761847220292
+model_id: m-73c2dcd3166b48ceaccd79e289f1b516
+model_type: null
+name: LogisticRegression
+source_run_id: 30e6710245604173adc7462b01b90ecd
+status: 2
+status_message: null

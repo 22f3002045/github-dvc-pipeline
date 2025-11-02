@@ -1,0 +1,10 @@
+artifact_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-76b55fc1ae724398858030c5e2a3a503/artifacts
+creation_timestamp: 1761908480189
+experiment_id: '581882739237479943'
+last_updated_timestamp: 1761908484188
+model_id: m-76b55fc1ae724398858030c5e2a3a503
+model_type: null
+name: DecisionTree
+source_run_id: 6888fc38d4fd4ad89262205730d8c485
+status: 2
+status_message: null

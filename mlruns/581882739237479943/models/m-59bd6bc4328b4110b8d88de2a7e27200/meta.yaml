@@ -1,0 +1,10 @@
+artifact_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-59bd6bc4328b4110b8d88de2a7e27200/artifacts
+creation_timestamp: 1761847211038
+experiment_id: '581882739237479943'
+last_updated_timestamp: 1761847213894
+model_id: m-59bd6bc4328b4110b8d88de2a7e27200
+model_type: null
+name: RandomForest
+source_run_id: ceee94d2e67948499eac081e6dfdc138
+status: 2
+status_message: null

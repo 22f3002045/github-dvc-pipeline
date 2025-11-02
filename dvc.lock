@@ -1,0 +1,48 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python3 train.py
+    deps:
+    - path: data/iris.csv
+      hash: md5
+      md5: 9c22f7cf3714d0c194f5f43a6276ca9d
+      size: 3861
+    - path: train.py
+      hash: md5
+      md5: f62f1cb9348c65c7686299902c1ed2ec
+      size: 4977
+    params:
+      params.yaml:
+        split.random_state: 42
+        split.test_size: 0.4
+        train.experiment_name: Iris_MultiModel_Training
+        train.max_depth: 3
+        train.model_name: IrisBestModel
+        train.model_output_path: 
+          /home/adarsh_panigrahi333/iris_pipeline/artifacts/model_1.joblib
+        train.random_state: 1
+        train.storage_location: 
+          file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-0db4b224b6044f2291676813b744743c/artifacts
+        train.tracking_uri: 
+          file:///home/adarsh_panigrahi333/iris_pipeline/mlruns
+    outs:
+    - path: artifacts/model_1.joblib
+      hash: md5
+      md5: 288c4262b5dfd19f6f6177eb51bbe2e8
+      size: 2577
+  test:
+    cmd: python3 test.py
+    deps:
+    - path: artifacts/model_1.joblib
+      hash: md5
+      md5: 288c4262b5dfd19f6f6177eb51bbe2e8
+      size: 2577
+    - path: test.py
+      hash: md5
+      md5: 578686661289892af7339d3b692190a3
+      size: 2919
+    outs:
+    - path: logs/sanity_check.log
+      hash: md5
+      md5: a032bdace3c8fc43a2c2cd35f73e575f
+      size: 61

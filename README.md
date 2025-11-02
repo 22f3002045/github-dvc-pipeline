@@ -1,67 +1,128 @@
-# Iris Classification DVC Pipeline
+# 🌸 Iris ML Pipeline with DVC & MLflow
 
-This project demonstrates a simple machine learning pipeline for classifying the Iris flower dataset. It uses a Decision Tree Classifier and is orchestrated using DVC (Data Version Control).
+This project demonstrates a complete end-to-end Machine Learning workflow for the **Iris dataset**, integrated with **DVC (Data Version Control)** and **MLflow** for experiment tracking and reproducibility.
 
-## Project Overview
+---
 
-The goal of this project is to train a model that can predict the species of an iris flower based on four features:
-
-*   Sepal Length
-*   Sepal Width
-*   Petal Length
-*   Petal Width
-
-The pipeline consists of a single `train` stage that handles data loading, splitting, model training, and evaluation.
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── artifacts
-│   └── model.joblib    # Trained model artifact
-├── data
-│   └── iris.csv        # Raw dataset
-├── test.py             # Sanity checks for the trained model
-├── train.py            # Training script
-└── python-test.yml     # DVC pipeline definition
+
+iris_pipeline/
+│
+├── data/
+│   ├── data_iris/
+│   │   └── iris.csv
+│   └── artifacts/
+│       └── model_1.joblib
+│
+├── mlruns/                      # MLflow tracking and experiments
+│
+├── train.py                     # Model training script
+├── test.py                      # Model testing/evaluation script
+│
+├── params.yaml                  # Configuration and hyperparameters
+├── dvc.yaml                     # DVC pipeline definition
+├── requirements.txt             # Python dependencies
+└── README.md                    # Project documentation
+
+---
+
+## 🧠 DVC Pipeline Overview
+
+### `train` Stage
+
+* **Command:** `python3 train.py`
+* **Dependencies:** `train.py`, Iris dataset (`iris.csv`)
+* **Outputs:** Trained model (`model_1.joblib`)
+
+### `test` Stage
+
+* **Command:** `python3 test.py`
+* **Dependencies:** `test.py`, trained model
+* **Outputs:** `logs/sanity_check.log`
+
+---
 ```
+## 🚀 Running the Pipeline
 
-## Getting Started
-
-### Prerequisites
-
-*   Python 3.8+
-*   DVC
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repo-url>
-    cd <your-repo-directory>
-    ```
-
-2.  **Install dependencies:**
-    The required Python packages are `pandas`, `scikit-learn`, and `dvc`.
-    ```bash
-    pip install pandas scikit-learn "dvc[s3]" # or other remote storage
-    ```
-
-### Running the Pipeline
-
-To execute the full pipeline and reproduce the `artifacts/model.joblib` file, run:
+### Step 1: Initialize DVC and Git
 
 ```bash
-dvc repro -f python-test.yml
+git init
+dvc init
+
 ```
-
-This command will execute the `train` stage defined in `python-test.yml`. It will train the model and save it to the `artifacts` directory.
-
-### Testing the Model
-
-After the pipeline has been successfully run, you can perform a sanity check on the generated model:
+### Step 2: Reproduce the pipeline
 
 ```bash
-python test.py
+dvc repro
 ```
 
-You should see output indicating that all sanity checks have passed.
+### Step 3: View pipeline stages
+
+```bash
+dvc dag
+```
+
+### Step 4: Track experiments with MLflow
+
+```bash
+mlflow ui --backend-store-uri file:///mlruns
+```
+
+Then open your browser at [http://localhost:5000](http://localhost:5000).
+
+---
+
+## 📊 Outputs
+
+* Trained model stored at:
+  `data/artifacts/model_1.joblib`
+* Logs and evaluation report:
+  `logs/sanity_check.log`
+* Experiment tracking data:
+  `mlruns/`
+
+---
+
+## 🧰 Requirements
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Typical libraries:
+
+```
+scikit-learn
+pandas
+numpy
+mlflow
+dvc
+joblib
+```
+
+---
+
+## 🏗️ Future Enhancements
+
+
+* Containerize with Docker for deployment
+* Add to Kubernetes Engine in GCP
+
+
+---
+
+## ✨ Author
+
+**Adarshom Panigrahi**
+*Data Science Student | Open Source Contributor*
+📧 [adarshom.panigrahi333@gmail.com](mailto:adarshom.panigrahi333@gmail.com)
+
+---
+
+
+>>>>>>> week5

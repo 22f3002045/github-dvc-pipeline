@@ -1,0 +1,15 @@
+creation_timestamp: 1761843906166
+current_stage: None
+deployment_job_state: null
+description: null
+last_updated_timestamp: 1761843906166
+model_id: m-0db4b224b6044f2291676813b744743c
+name: IrisBestModel
+run_id: 9cc70377353f4dbca9a51934e34da7bc
+run_link: null
+source: models:/m-0db4b224b6044f2291676813b744743c
+status: READY
+status_message: null
+storage_location: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-0db4b224b6044f2291676813b744743c/artifacts
+user_id: null
+version: 2

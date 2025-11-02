@@ -1,0 +1,14 @@
+artifact_uri: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/cb5e4bd47e114c5ba52564293f6f62ff/artifacts
+end_time: 1761908476010
+entry_point_name: ''
+experiment_id: '581882739237479943'
+lifecycle_stage: active
+run_id: cb5e4bd47e114c5ba52564293f6f62ff
+run_name: 'DecisionTree_{''max_depth'': 2}'
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1761908468755
+status: 3
+tags: []
+user_id: adarsh_panigrahi333
