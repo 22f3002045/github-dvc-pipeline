@@ -1,0 +1,22 @@
+artifact_path: file:///home/adarsh_panigrahi333/iris_pipeline/mlruns/581882739237479943/models/m-6eb6c201a6964546abd0a5e60e8e1b67/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.3
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.5.1
+model_id: m-6eb6c201a6964546abd0a5e60e8e1b67
+model_size_bytes: 66916
+model_uuid: m-6eb6c201a6964546abd0a5e60e8e1b67
+prompts: null
+run_id: 9c408814f06e4957986d73aea758a310
+utc_time_created: '2025-10-31 11:01:33.168659'

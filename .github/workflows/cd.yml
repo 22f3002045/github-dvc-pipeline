@@ -1,0 +1,107 @@
+name: CD - Train, Build & Deploy to GKE
+
+on:
+  push:
+    branches: ["master"]
+
+env:
+  IMAGE_BASE: ${{ secrets.LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REPO }}/iris-api
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 🧾 Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 🐍 Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # 📦 Install dependencies for training
+      - name: Install dependencies for training
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install dvc[gs] mlflow joblib numpy scikit-learn
+
+      # 📥 Pull DVC data (if configured)
+      - name: Pull DVC data (if configured)
+        run: |
+          if [ -f ".dvc/config" ]; then
+            dvc pull || echo "No DVC remote configured"
+          fi
+
+      # 🧠 Run model training
+      - name: Run model training
+        run: python train.py
+
+      # ✅ Check model artifact exists
+      - name: Check model artifact exists
+        run: |
+          if [ ! -f "artifacts/model.joblib" ]; then
+            echo "❌ Model artifact missing!"
+            ls -la
+            exit 1
+          fi
+          echo "✅ Model artifact found."
+
+      # 🔐 Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ☁️ Setup gcloud and GKE auth plugin
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          install_components: 'gke-gcloud-auth-plugin'
+
+      # 🐳 Configure Docker to use gcloud credential helper
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker --quiet ${{ secrets.LOCATION }}-docker.pkg.dev
+
+      # 🏗️ Build Docker image
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
+          docker build -t "${IMAGE_TAG}" .
+          docker tag "${IMAGE_TAG}" "${{ env.IMAGE_BASE }}:latest"
+
+      # 🚀 Push Docker image to Google Artifact Registry
+      - name: Push Docker image
+        run: |
+          IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
+          docker push "${IMAGE_TAG}"
+          docker push "${{ env.IMAGE_BASE }}:latest"
+
+      # 🔧 Get GKE credentials
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER }}
+          location: ${{ secrets.GKE_ZONE_OR_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+
+      # 🚢 Deploy to GKE
+      - name: Deploy to GKE
+        run: |
+          IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
+          echo "Deploying image: ${IMAGE_TAG}"
+          kubectl set image deployment/iris-api iris-api=${IMAGE_TAG} --record || true
+          kubectl rollout status deployment/iris-api
+
+      # 🧩 Apply manifests if first-time deployment
+      - name: Apply manifests (if needed)
+        if: failure()
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/iris-api
