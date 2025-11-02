@@ -22,6 +22,12 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Download dataset
+        run: |
+          mkdir -p data
+          wget https://raw.githubusercontent.com/IITMBSMLOps/ga_resources/main/week_1/data/raw/iris.csv -O data/iris.csv
+
+
       # 📦 Install dependencies for training
       - name: Install dependencies for training
         run: |

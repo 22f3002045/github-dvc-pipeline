@@ -15,12 +15,12 @@ stages:
       - train.tracking_uri
       - train.storage_location
     outs:
-      - /home/adarsh_panigrahi333/iris_pipeline/artifacts/model_1.joblib
+      - artifacts/model_1.joblib
 
   test:
     cmd: python3 test.py
     deps:
       - test.py
-      - /home/adarsh_panigrahi333/iris_pipeline/artifacts/model_1.joblib
+      - artifacts/model_1.joblib
     outs:
       - logs/sanity_check.log

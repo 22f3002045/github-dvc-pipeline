@@ -19,8 +19,8 @@ warnings.filterwarnings("ignore")
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
-DATA_PATH = "/home/adarsh_panigrahi333/iris_pipeline/data/iris.csv"
-MODEL_OUTPUT_PATH = "/home/adarsh_panigrahi333/iris_pipeline/artifacts/model_1.joblib"
+DATA_PATH = "data/iris.csv"
+MODEL_OUTPUT_PATH = "artifacts/model_1.joblib"
 MLFLOW_TRACKING_URI = "file:./mlruns"
 EXPERIMENT_NAME = "Iris_MultiModel_Training"
 REGISTERED_MODEL_NAME = "IrisBestModel"
