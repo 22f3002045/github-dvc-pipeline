@@ -5,6 +5,7 @@ import numpy as np
 import joblib
 import warnings
 import os
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay
@@ -12,7 +13,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from mlflow.exceptions import MlflowException
-import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
 
@@ -22,10 +22,13 @@ warnings.filterwarnings("ignore")
 DATA_PATH = "data/iris.csv"
 MODEL_OUTPUT_PATH = "artifacts/model_1.joblib"
 
+# ✅ Use relative, environment-agnostic MLflow setup (works on local + CI/CD)
 os.environ["MLFLOW_TRACKING_URI"] = "file:./mlruns"
-os.environ["MLFLOW_HOME"] = os.getcwd()
+os.environ["MLFLOW_ARTIFACT_ROOT"] = os.path.join(os.getcwd(), "mlartifacts")
 
-MLFLOW_TRACKING_URI = "file:./mlruns"
+os.makedirs(os.environ["MLFLOW_ARTIFACT_ROOT"], exist_ok=True)
+
+MLFLOW_TRACKING_URI = os.environ["MLFLOW_TRACKING_URI"]
 EXPERIMENT_NAME = "Iris_MultiModel_Training"
 REGISTERED_MODEL_NAME = "IrisBestModel"
 
@@ -105,9 +108,8 @@ def train_and_evaluate():
                 mlflow.log_param("train_size", len(train))
                 mlflow.log_param("test_size", len(test))
 
-                # Log model
-                mlflow.sklearn.log_model(model, artifact_path=model_name)
-
+                # ✅ Log model (without deprecated argument)
+                mlflow.sklearn.log_model(model, model_name)
 
                 print(f"Trained {model_name} with {param_set}, Accuracy={acc:.4f}")
 
