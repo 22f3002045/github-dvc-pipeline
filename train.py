@@ -21,6 +21,10 @@ warnings.filterwarnings("ignore")
 # ----------------------------
 DATA_PATH = "data/iris.csv"
 MODEL_OUTPUT_PATH = "artifacts/model_1.joblib"
+
+os.environ["MLFLOW_TRACKING_URI"] = "file:./mlruns"
+os.environ["MLFLOW_HOME"] = os.getcwd()
+
 MLFLOW_TRACKING_URI = "file:./mlruns"
 EXPERIMENT_NAME = "Iris_MultiModel_Training"
 REGISTERED_MODEL_NAME = "IrisBestModel"
@@ -102,7 +106,8 @@ def train_and_evaluate():
                 mlflow.log_param("test_size", len(test))
 
                 # Log model
-                mlflow.sklearn.log_model(model, model_name)
+                mlflow.sklearn.log_model(model, artifact_path=model_name)
+
 
                 print(f"Trained {model_name} with {param_set}, Accuracy={acc:.4f}")
 
