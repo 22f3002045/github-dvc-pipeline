@@ -4,6 +4,11 @@ on:
   push:
     branches: ["master"]  # change to ["main"] if your default branch is main
 
+# ✅ Needed so CML can comment on commits/PRs
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   IMAGE_BASE: ${{ secrets.LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REPO }}/iris-api
 
@@ -217,7 +222,7 @@ jobs:
       - name: Setup CML
         uses: iterative/setup-cml@v2
 
-      - name: Build & publish CML report
+      - name: Build & publish CML report (commit or PR)
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -268,8 +273,14 @@ jobs:
           cat hpa_restored.txt >> report.md
           echo '```' >> report.md
 
-          # Post to the workflow / PR
-          cml comment create --publish report.md
+          # Post to PR if present; else post to commit
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "Posting CML comment to PR #${{ github.event.pull_request.number }} ..."
+            cml comment create --pr --publish report.md || echo "CML PR comment failed; continuing."
+          else
+            echo "Posting CML comment to commit $GITHUB_SHA ..."
+            cml comment create --commit-sha "$GITHUB_SHA" --publish report.md || echo "CML commit comment failed; continuing."
+          fi
 
       - name: Upload raw logs as artifact
         uses: actions/upload-artifact@v4
