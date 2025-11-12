@@ -5,7 +5,7 @@ metadata:
   labels:
     app: iris-api
 spec:
-  replicas: 2
+  replicas: 1   # HPA starts from 1
   selector:
     matchLabels:
       app: iris-api
@@ -16,18 +16,30 @@ spec:
     spec:
       containers:
         - name: iris-api
+          # This will be overwritten by: kubectl set image deployment/iris-api iris-api=${IMAGE_TAG}
           image: LOCATION-docker.pkg.dev/PROJECT/REPO/iris-api:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8080   # Keep in sync with Service targetPort
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
