@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: iris-api
-          # This will be overwritten by: kubectl set image deployment/iris-api iris-api=${IMAGE_TAG}
-          image: LOCATION-docker.pkg.dev/PROJECT/REPO/iris-api:latest
+          # Keep a valid image here to avoid InvalidImageName during first apply
+          image: asia-south1-docker.pkg.dev/stellar-depth-456403-b3/iris-repo/iris-api:latest
           ports:
             - containerPort: 8080   # Keep in sync with Service targetPort
           resources:

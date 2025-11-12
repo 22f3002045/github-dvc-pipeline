@@ -1,8 +1,8 @@
-name: CD - Train, Build & Deploy to GKE
+name: CD - Train, Build, Deploy & Stress Test (GKE + CML)
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master"]  # change to ["main"] if your default branch is main
 
 env:
   IMAGE_BASE: ${{ secrets.LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.ARTIFACT_REPO }}/iris-api
@@ -12,111 +12,104 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🧾 Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 🐍 Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 📦 Install dependencies for training
-      - name: Install dependencies for training
+      - name: Install training deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install dvc[gs] mlflow joblib numpy scikit-learn
 
-      # 📥 Pull DVC data (if configured)
       - name: Pull DVC data (if configured)
         run: |
           if [ -f ".dvc/config" ]; then
             echo "Pulling dataset using DVC..."
             dvc pull || echo "No DVC remote configured or dataset already present"
           else
-            echo "DVC not configured, using dataset from repo."
+            echo "DVC not configured; using dataset from repo."
           fi
 
-      # 🧠 Run model training
-      - name: Run model training
+      - name: Train model
         run: python train.py
 
-      # ✅ Check model artifact exists
-      - name: Check model artifact exists
+      - name: Check model artifact
         run: |
           if [ ! -f "artifacts/model_1.joblib" ]; then
-            echo "❌ Model artifact missing!"
+            echo "❌ artifacts/model_1.joblib missing!"
             ls -la artifacts || true
             exit 1
           fi
           echo "✅ Model artifact found."
 
-      # 🔐 Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # ☁️ Setup gcloud and GKE auth plugin
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
           install_components: 'gke-gcloud-auth-plugin'
 
-      # 🐳 Configure Docker to use gcloud credential helper
-      - name: Configure Docker authentication
-        run: |
-          gcloud auth configure-docker --quiet ${{ secrets.LOCATION }}-docker.pkg.dev
+      - name: Configure Docker auth for GAR
+        run: gcloud auth configure-docker --quiet ${{ secrets.LOCATION }}-docker.pkg.dev
 
-      # 🏗️ Build Docker image
       - name: Build Docker image
         run: |
           IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
           docker build -t "${IMAGE_TAG}" .
           docker tag "${IMAGE_TAG}" "${{ env.IMAGE_BASE }}:latest"
 
-      # 🚀 Push Docker image to Google Artifact Registry
       - name: Push Docker image
         run: |
           IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
           docker push "${IMAGE_TAG}"
           docker push "${{ env.IMAGE_BASE }}:latest"
 
-      # 🔧 Get GKE credentials
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: ${{ secrets.GKE_CLUSTER }}
-          location: ${{ secrets.GKE_ZONE_OR_REGION }}
+          location: ${{ secrets.GKE_ZONE_OR_REGION }}   # e.g., us-central1-a (ZONAL)
           project_id: ${{ secrets.GCP_PROJECT }}
 
-      # 📄 Apply K8s manifests (ensure resources exist)
       - name: Apply manifests
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
-          # Apply HPA for autoscaling demo: min=1, max=3
           kubectl apply -f k8s/hpa.yml
 
-      # 🚢 Rollout with new image
-      - name: Set image and rollout
+      - name: Rollout with new image
         run: |
           IMAGE_TAG=${{ env.IMAGE_BASE }}:v${{ github.run_number }}
           kubectl set image deployment/iris-api iris-api=${IMAGE_TAG} --record || true
-          kubectl rollout status deployment/iris-api --timeout=120s
+          kubectl rollout status deployment/iris-api --timeout=240s
+          kubectl get pods -l app=iris-api -o wide
+          kubectl get svc iris-api-svc -o wide
+          kubectl get hpa iris-api-hpa || true
 
-  stress-test:
+  stress-and-cml:
     runs-on: ubuntu-latest
     needs: build-deploy
+
     steps:
-      # Reuse creds to talk to the same cluster
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          install_components: 'gke-gcloud-auth-plugin'
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -130,50 +123,140 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wrk
 
+      - name: Assert Service exists
+        run: |
+          if ! kubectl get svc iris-api-svc >/dev/null 2>&1; then
+            echo "Service iris-api-svc not found. Listing services & events:"
+            kubectl get svc
+            kubectl get events --sort-by=.lastTimestamp | tail -n 50 || true
+            exit 1
+          fi
+
       - name: Wait for Service external IP
-        id: svc-ip
+        id: svc
         run: |
           set -e
-          for i in {1..30}; do
-            IP=$(kubectl get svc iris-api -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true)
+          echo "Services:"; kubectl get svc
+          for i in {1..60}; do
+            IP=$(kubectl get svc iris-api-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             if [ -n "$IP" ]; then
               echo "SERVICE_IP=$IP" >> $GITHUB_ENV
               echo "Service IP: $IP"
               exit 0
             fi
-            echo "Waiting for LoadBalancer IP ($i/30)..."
-            sleep 10
+            echo "Waiting for LoadBalancer IP ($i/60)..."
+            sleep 5
           done
           echo "Service external IP not available." >&2
+          kubectl describe svc iris-api-svc || true
           exit 1
 
       - name: Smoke check
         run: |
-          echo "HPA status:"
-          kubectl get hpa iris-api-hpa || true
-          echo "Pods:"
-          kubectl get pods -o wide || true
-          echo "Service:"
-          kubectl get svc iris-api -o wide || true
+          curl -sf http://$SERVICE_IP/health
+          kubectl get pods -l app=iris-api -o wide | tee pods_initial.txt
+          kubectl get hpa iris-api-hpa | tee hpa_initial.txt
 
-      - name: Stress test - autoscaling on (1000 concurrent)
+      - name: Stress test (autoscaling ON) c=1000
         run: |
-          echo "Running wrk @ 1000 connections for 30s..."
-          wrk -t12 -c1000 -d30s http://$SERVICE_IP:8080/ || true
-          echo "Check HPA & pods after load:"
-          kubectl get hpa iris-api-hpa
-          kubectl get pods -o wide
+          echo "Running wrk @ 1000 connections for 30s (autoscaling ON)..."
+          wrk -t12 -c1000 -d30s http://$SERVICE_IP/ | tee wrk_on.txt
+          kubectl get hpa iris-api-hpa | tee hpa_after_on.txt
+          kubectl get pods -l app=iris-api -o wide | tee pods_after_on.txt
+          kubectl top pods || true | tee top_after_on.txt
 
-      - name: Lock HPA to 1 pod (bottleneck scenario)
+      - name: Lock HPA to 1 pod (bottleneck)
         run: |
           kubectl apply -f k8s/hpa-single.yml
-          kubectl get hpa iris-api-hpa
+          sleep 10
+          kubectl get hpa iris-api-hpa | tee hpa_single_applied.txt
 
-      - name: Stress test - single pod (2000 concurrent)
+      - name: Stress test (autoscaling OFF) c=2000
         run: |
-          echo "Running wrk @ 2000 connections for 30s with maxReplicas=1..."
-          wrk -t12 -c2000 -d30s http://$SERVICE_IP:8080/ || true
-          echo "Observe bottlenecks (no scaling expected):"
-          kubectl get hpa iris-api-hpa
-          kubectl get pods -o wide
+          echo "Running wrk @ 2000 connections for 30s (maxReplicas=1)..."
+          wrk -t12 -c2000 -d30s http://$SERVICE_IP/ | tee wrk_off.txt
+          kubectl get hpa iris-api-hpa | tee hpa_after_off.txt
+          kubectl get pods -l app=iris-api -o wide | tee pods_after_off.txt
+          kubectl top pods || true | tee top_after_off.txt
 
+      - name: Restore HPA (1..3)
+        run: |
+          kubectl apply -f k8s/hpa.yml
+          kubectl get hpa iris-api-hpa | tee hpa_restored.txt
+
+      # ---------- CML reporting ----------
+      - name: Setup CML
+        uses: iterative/setup-cml@v2
+
+      - name: Build & publish CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "# IRIS API Stress Test Report" > report.md
+          echo "" >> report.md
+          echo "Service IP: \`$SERVICE_IP\`" >> report.md
+          echo "" >> report.md
+
+          echo "## Autoscaling ON (min=1, max=3) — wrk @ c=1000, 30s" >> report.md
+          echo '```' >> report.md
+          cat wrk_on.txt >> report.md
+          echo '```' >> report.md
+          echo "" >> report.md
+          echo "### HPA & Pods after load" >> report.md
+          echo '```' >> report.md
+          cat hpa_after_on.txt >> report.md
+          echo "" >> report.md
+          cat pods_after_on.txt >> report.md
+          echo "" >> report.md
+          cat top_after_on.txt >> report.md
+          echo '```' >> report.md
+          echo "" >> report.md
+
+          echo "## Autoscaling OFF (max=1) — wrk @ c=2000, 30s" >> report.md
+          echo '```' >> report.md
+          cat wrk_off.txt >> report.md
+          echo '```' >> report.md
+          echo "" >> report.md
+          echo "### HPA & Pods under constraint" >> report.md
+          echo '```' >> report.md
+          cat hpa_after_off.txt >> report.md
+          echo "" >> report.md
+          cat pods_after_off.txt >> report.md
+          echo "" >> report.md
+          cat top_after_off.txt >> report.md
+          echo '```' >> report.md
+          echo "" >> report.md
+
+          echo "## Initial state & restoration" >> report.md
+          echo '```' >> report.md
+          echo "Initial pods:" >> report.md
+          cat pods_initial.txt >> report.md
+          echo "" >> report.md
+          echo "Initial HPA:" >> report.md
+          cat hpa_initial.txt >> report.md
+          echo "" >> report.md
+          echo "HPA restored:" >> report.md
+          cat hpa_restored.txt >> report.md
+          echo '```' >> report.md
+
+          # Post to run / PR
+          cml comment create --publish report.md
+
+      - name: Upload raw logs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-logs
+          path: |
+            wrk_on.txt
+            wrk_off.txt
+            hpa_initial.txt
+            hpa_after_on.txt
+            hpa_single_applied.txt
+            hpa_after_off.txt
+            hpa_restored.txt
+            pods_initial.txt
+            pods_after_on.txt
+            pods_after_off.txt
+            top_after_on.txt
+            top_after_off.txt
+            report.md
