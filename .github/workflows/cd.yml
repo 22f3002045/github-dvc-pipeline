@@ -160,13 +160,31 @@ jobs:
           kubectl get pods -l app=iris-api -o wide | tee pods_initial.txt
           kubectl get hpa iris-api-hpa | tee hpa_initial.txt
 
+      # (Optional) Ensure metrics-server to enable kubectl top
+      - name: Ensure metrics-server (optional)
+        run: |
+          if ! kubectl get deploy metrics-server -n kube-system >/dev/null 2>&1; then
+            echo "Installing metrics-server…"
+            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+            kubectl rollout status -n kube-system deploy/metrics-server --timeout=120s || true
+          else
+            echo "metrics-server already present."
+          fi
+
       - name: Stress test (autoscaling ON) c=1000
         run: |
           echo "Running wrk @ 1000 connections for 30s (autoscaling ON)..."
           wrk -t12 -c1000 -d30s http://$SERVICE_IP/ | tee wrk_on.txt
           kubectl get hpa iris-api-hpa | tee hpa_after_on.txt
           kubectl get pods -l app=iris-api -o wide | tee pods_after_on.txt
-          kubectl top pods || true | tee top_after_on.txt
+
+      - name: Capture pod metrics after autoscaling ON
+        run: |
+          if kubectl top pods > top_after_on.txt 2>&1; then
+            echo "Captured pod metrics (ON)."
+          else
+            echo "metrics-server not available; captured error output instead." >> top_after_on.txt
+          fi
 
       - name: Lock HPA to 1 pod (bottleneck)
         run: |
@@ -181,7 +199,14 @@ jobs:
           wrk -t12 -c2000 -d30s http://$SERVICE_IP/ | tee wrk_off.txt
           kubectl get hpa iris-api-hpa | tee hpa_after_off.txt
           kubectl get pods -l app=iris-api -o wide | tee pods_after_off.txt
-          kubectl top pods || true | tee top_after_off.txt
+
+      - name: Capture pod metrics after autoscaling OFF (max=1)
+        run: |
+          if kubectl top pods > top_after_off.txt 2>&1; then
+            echo "Captured pod metrics (OFF)."
+          else
+            echo "metrics-server not available; captured error output instead." >> top_after_off.txt
+          fi
 
       - name: Restore HPA (1..3)
         run: |
